@@ -1,0 +1,13 @@
+add_library(HD44780 INTERFACE)
+target_sources(HD44780 INTERFACE HD44780.cc)
+target_include_directories(HD44780 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(HD44780 INTERFACE pico_stdlib hardware_pio)
+
+set(HD44780_MODE "PIO,CPU" CACHE STRING "Build using PIO, CPU or both modes")
+if (HD44780_MODE MATCHES "(,CPU$)|(^CPU,)|(,CPU,)|(^CPU$)")
+    target_compile_definitions(HD44780 INTERFACE HD44780_MODE_CPU)
+endif()
+if (HD44780_MODE MATCHES "(,PIO$)|(^PIO,)|(,PIO,)|(^PIO$)")
+    target_compile_definitions(HD44780 INTERFACE HD44780_MODE_PIO)
+    pico_generate_pio_header(HD44780 ${CMAKE_CURRENT_LIST_DIR}/HD44780.pio)
+endif()

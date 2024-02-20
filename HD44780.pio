@@ -1,0 +1,78 @@
+;
+; PIO to drive a 44780 based LCD
+;
+; Original Author: John Fredine
+; Original Date: February 20, 2024
+;
+; Each word retrieved from the TX buffer is a sequence of commands.
+; The first bit in a command indicates if the command is an LCD command
+; or a delay command.  An LCD command is 5 bits representing RS and D[7:4]
+; which will be strobed into the controller with the enable pin.  A delay is
+; just a 19 bit countdown and after a delay a new data word is requested.
+; All words from the TX buffer MUST be terminated with a delay.
+;
+; This means a word from the TX buffer can be:
+;
+; 1. Just a delay
+; 2. A nibble for the LCD controller followed by a delay
+; or
+; 3. A byte (i.e. two nibbles) for the LCD controller followed by a delay
+;
+
+.program HD44780
+.side_set 1
+
+.wrap_target
+    pull               side 0       ; get new command set from TX FIFO
+
+next_cmd:
+    out  x 1           side 0       ; Load one bit into X for testing
+    jmp  !x delay      side 0       ; 0 - delay, 1 - command
+
+    out  pins 5        side 0 [1]   ; write nibble with 1us setup
+    jmp  next_cmd      side 1 [1]   ; enable high for 2us
+
+delay:
+    out x, 19          side 0 
+delay_loop:
+    jmp x-- delay_loop side 0
+.wrap
+
+
+% c-sdk {
+static inline void HD44780_program_init(PIO pio, uint sm, uint offset,
+                                        uint en_pin, uint cmd_pins) {
+    pio_sm_config c = HD44780_program_get_default_config(offset);
+
+
+    // Map the state machine's sideset pin 
+    sm_config_set_sideset_pins(&c, en_pin);
+
+    // Map the state machine's out pins
+    sm_config_set_out_pins(&c, cmd_pins, 5);
+
+    // Set direction and value for pins
+    uint mask = 0;
+    mask |= 1 << en_pin;
+    for (int i = 0; i < 5; i++) {
+        mask |= 1 << (cmd_pins + i);
+    }
+    pio_sm_set_pins_with_mask(pio, sm, 0, mask);
+    pio_sm_set_pindirs_with_mask(pio, sm, 0xffffffff, mask);
+
+    // Set output pins so they can be driven by PIO
+    pio_gpio_init(pio, en_pin);
+    for (int i = 0; i < 5; i++) {
+        pio_gpio_init(pio, cmd_pins + i);
+    }
+
+    // set clock rate to 1MHz
+    sm_config_set_clkdiv_int_frac(&c, 125, 0);
+
+    // Load our configuration, and jump to the start of the program
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Set the state machine running
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
