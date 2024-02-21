@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     bi_decl(bi_program_description("Drive HD44780 based LCD"));
     stdio_init_all();
 
-    HD44780 hd44780(7, 2, pio0);
+    HD44780 hd44780(7, 2);
 
     hd44780.init();
 

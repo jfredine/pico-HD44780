@@ -7,7 +7,7 @@ class HD44780 {
     HD44780(uint en, uint rs, uint d7, uint d6, uint d5, uint d4);
 #endif
 #ifdef HD44780_MODE_PIO
-    HD44780(uint en, uint d4, PIO pio);
+    HD44780(uint en, uint d4, PIO pio=pio0);
 #endif
 
     void clear(void);
