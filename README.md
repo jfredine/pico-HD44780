@@ -93,7 +93,7 @@ directory containing the library must be added to the project using
 [add_subdirectory()](https://cmake.org/cmake/help/latest/command/add_subdirectory.html)
 If the path is relative, then a name for the directory used for compiling
 sources must be provided (HD44780 is probably a good choice).  Following this
-the library must beadded as a link target using
+the library must be added as a link target using
 [target_link_libraries()](https://cmake.org/cmake/help/latest/command/target_link_libraries.html).
 E.g.
 
